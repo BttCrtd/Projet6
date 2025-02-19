@@ -31,7 +31,7 @@ exports.modifyBook = (req, res, next) => {
     Book.findOne({ _id: req.params.id })
         .then((book) => {
             if (book.userId != req.auth.userId) {
-                return res.status(401).json({ message: 'Non autorisé' });
+                return res.status(403).json({ error: new Error('Unauthorized request') });
             }
 
             if (req.file) {
@@ -59,24 +59,24 @@ exports.modifyBook = (req, res, next) => {
                     .catch((error) => res.status(400).json({ error }));
             }
         })
-        .catch((error) => res.status(400).json({ error }));
+        .catch((error) => res.status(404).json({ error }));
 };
 
 exports.deleteBook = (req, res, next) => {
     Book.findOne({_id: req.params.id})
         .then(book => {
             if(book.userId != req.auth.userId) {
-                res.status(401).json({message: 'Non autorisé'})
+                res.status(403).json({error: new Error('Unauthorized request')})
             } else {
                 const filename = book.imageUrl.split('/images/')[1];
                 fs.unlink(`images/${filename}`, () => {
                     Book.deleteOne({_id: req.params.id})
                         .then(() => res.status(200).json({message: 'Livre supprimé'}))
-                        .catch(error => res.status(401).json({error}))
+                        .catch(error => res.status(400).json({error}))
                 });
             }
         })
-        .catch(error => {res.status(500).json({error})});
+        .catch(error => {res.status(404).json({error})});
 }
 
 exports.getOneBook = (req, res, next) => {
@@ -87,19 +87,14 @@ exports.getOneBook = (req, res, next) => {
 
 exports.getAllBooks = (req, res, next) => {
     Book.find()
-     .then(books => {
-        console.log("Livres trouvés:", books);
-        res.status(200).json(books)})
-     .catch(error => res.status(400).json({error}));
+     .then(books => res.status(200).json(books))
+     .catch(error => res.status(404).json({error}));
  };
 
 exports.top3 = (req, res, next) => {
     Book.find().sort({averageRating: -1}).limit(3)
-        .then(books => {
-            console.log(books);
-            res.status(200).json(books)
-        })
-        .catch(error => res.status(400).json({ error }));
+        .then(books => res.status(200).json(books))
+        .catch(error => res.status(404).json({ error }));
 }
 
 exports.ratingBook = (req, res, next) => {
@@ -112,7 +107,7 @@ exports.ratingBook = (req, res, next) => {
                 const bookRatings = book.ratings
                 const allUserId = bookRatings.map(rating => rating.userId)
                 if (allUserId.includes(req.auth.userId)) {
-                    res.status(400).json({message: 'Vous avez déjà noté ce livre !'})
+                    res.status(403).json({error: new Error('Unauthorized request')})
                 } else {
                     bookRatings.push(bookRate);
                     const grades = bookRatings.map(rating => rating.grade)
@@ -123,7 +118,7 @@ exports.ratingBook = (req, res, next) => {
                         .then(updateBook => {
                             res.status(200).json(updateBook)
                         })
-                        .catch(error => res.status(401).json({error}));
+                        .catch(error => res.status(400).json({error}));
                 }
             })
             .catch(error => res.status(404).json({error}));

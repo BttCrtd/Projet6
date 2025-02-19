@@ -12,7 +12,7 @@ const resizeImage = (file, bookObject) =>{
 
     sharp.cache(false)
     sharp(file.path)
-        .resize(210, 260) 
+        .resize(463, 595) 
         .toFile(imagePath)
         .then(() => {
             
